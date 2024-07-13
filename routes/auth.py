@@ -1,15 +1,22 @@
+import os
 import uuid
 import bcrypt
-from fastapi import Depends, HTTPException, APIRouter
+from fastapi import Depends, HTTPException, APIRouter, Header
+import jwt
 from sqlalchemy.orm import Session
 from database import get_db
 from exception import CustomHTTPException
+from middleware.auth_middleware import auth_middleware
 from models.user import User
 from pydantic_schemas.user_create import UserCreate
 from pydantic_schemas.user_login import UserLogin
-from response import success_response
+from response import login_success_response, success_response
+from dotenv import load_dotenv
 
 router = APIRouter()
+
+# Load environment variables
+load_dotenv()
 
 # sign up route
 @router.post('/signup', status_code=201)  
@@ -32,7 +39,10 @@ def signup_user(user: UserCreate, db: Session=Depends(get_db)):
     db.commit()
     db.refresh(user_db)
     
+    print(user_db.email)
+    
     return success_response(user_db, status_code=201)
+
 
 # log in route
 @router.post('/login')
@@ -55,4 +65,22 @@ def login_user(user: UserLogin, db: Session=Depends(get_db)):
             message="Invalid credentials"
         )
     
-    return success_response(user_db)
+    password_key = os.getenv('PASSWORD_KEY')
+    token = jwt.encode({'id': user_db.id}, password_key)
+    
+    return login_success_response(user_db, token)
+
+
+#
+@router.get('/')
+def current_user_data(db: Session=Depends(get_db), 
+                      user_dict= Depends(auth_middleware)):
+    user_db =  db.query(User).filter(User.id == user_dict['uid']).first()
+    
+    if not user_db:
+        raise CustomHTTPException(
+            status_code=404,
+            message="User not found"
+        )
+        
+    return login_success_response(user_db, user_dict['token'])
