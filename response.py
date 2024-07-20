@@ -1,8 +1,9 @@
 from typing import Any, Dict
 
-def success_response(data: Any, status_code: int = 200) -> Dict[str, Any]:
+def success_response(data: Any, status_code: int = 200, message: str = 'Successful') -> Dict[str, Any]:
     return {
         "status": "success",
+        "message": message,
         "statusCode": status_code,
         "data": data
     }
