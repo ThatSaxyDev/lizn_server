@@ -2,7 +2,7 @@ from models.base import Base
 from sqlalchemy import TEXT, VARCHAR, Column
 
 class Podcast(Base):
-    __tablename__ = 'songs'
+    __tablename__ = 'podcasts'
     
     id = Column(TEXT, primary_key=True)
     podcast_url = Column(TEXT)
@@ -10,5 +10,5 @@ class Podcast(Base):
     podcast_name = Column(VARCHAR(100))
     creator = Column(TEXT)
     creator_id = Column(TEXT)
-    hex_code = Column(VARCHAR(6))
+    hex_code = Column(VARCHAR(6)) 
     

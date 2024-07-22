@@ -7,8 +7,11 @@ import cloudinary
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
 from middleware.auth_middleware import auth_middleware
+from models.favourite import Favourite
 from models.podcast import Podcast
+from pydantic_schemas.favourite_podcast import FavouritePodcast
 from response import success_response
+from sqlalchemy.orm import joinedload
 
 
 
@@ -22,6 +25,7 @@ cloudinary.config(
     secure=True
 )
 
+# upload podcast
 @router.post('/upload', status_code=201)
 def upload_podcast(podcast: UploadFile = File(...), 
                    thumbnail: UploadFile = File(...), 
@@ -53,3 +57,44 @@ def upload_podcast(podcast: UploadFile = File(...),
     db.refresh(new_podcast)
     
     return success_response(new_podcast, status_code=201, message='Podcast uploaded successfully') 
+
+# get all podcasts
+@router.get('/get-all-podcasts')
+def list_podcasts(db: Session = Depends(get_db),
+                  auth_dict = Depends(auth_middleware)):
+    podcasts = db.query(Podcast).all()
+    return {
+        "message": f"{len(podcasts)} podcast(s) found" if podcasts else "No podcasts available",
+        "podcasts": podcasts
+    }
+    
+# favourite podcast
+@router.post('/favourite-podcast')
+def favourite_podcast(podcast: FavouritePodcast, 
+                      db: Session = Depends(get_db), 
+                      auth_dict = Depends(auth_middleware)):
+    user_id = auth_dict['uid']
+    
+    fav_podcast = db.query(Favourite).filter(Favourite.podcast_id == podcast.podcast_id, Favourite.user_id == user_id).first()
+    
+    if fav_podcast:
+        db.delete(fav_podcast)
+        db.commit()
+        return success_response('', message='Removed from favourites')
+    else:
+        new_fav = Favourite(id=str(uuid.uuid4()), podcast_id=podcast.podcast_id, user_id=user_id)
+        db.add(new_fav)
+        db.commit()
+        return success_response('', message='Added to favourites')
+    
+# get a users favourite podcasts
+@router.get('/get-favourite-podcasts')
+def get_favourite_podcasts(db: Session = Depends(get_db), 
+                    auth_dict = Depends(auth_middleware)):
+    user_id = auth_dict['uid']
+    
+    fav_podcasts = db.query(Favourite).filter(Favourite.user_id == user_id).options(
+        joinedload(Favourite.podcast)).all()
+    
+    return success_response(fav_podcasts, message=f"{len(fav_podcasts)} podcast(s) found" if fav_podcasts else "No podcasts available")
+    

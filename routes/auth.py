@@ -12,6 +12,7 @@ from pydantic_schemas.user_create import UserCreate
 from pydantic_schemas.user_login import UserLogin
 from response import login_success_response, success_response
 from dotenv import load_dotenv
+from sqlalchemy.orm import joinedload
 
 router = APIRouter()
 
@@ -75,7 +76,8 @@ def login_user(user: UserLogin, db: Session=Depends(get_db)):
 @router.get('/')
 def current_user_data(db: Session=Depends(get_db), 
                       user_dict= Depends(auth_middleware)):
-    user_db =  db.query(User).filter(User.id == user_dict['uid']).first()
+    user_db =  db.query(User).filter(User.id == user_dict['uid']).options(
+        joinedload(User.favourites)).first()
     
     if not user_db:
         raise CustomHTTPException(
