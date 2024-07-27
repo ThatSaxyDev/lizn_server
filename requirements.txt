@@ -1,7 +1,7 @@
 uuid
 bcrypt
 fastapi
-jwt
+pyjwt
 sqlalchemy
 pydantic
 cloudinary
