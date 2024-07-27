@@ -5,3 +5,4 @@ jwt
 sqlalchemy
 pydantic
 cloudinary
+psycopg2
