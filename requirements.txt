@@ -1,0 +1,7 @@
+uuid
+bcrypt
+fastapi
+jwt
+sqlalchemy
+pydantic
+cloudinary
